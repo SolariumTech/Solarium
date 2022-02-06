@@ -15,20 +15,35 @@ contract Helper is Ownable {
 
     IERC20 public token;
 
-    address public team;
+    address public dao;
 
     IPool public pool;
     
+    // base 10**2
     uint public daoFee;
+    uint public claimFee;
 
     uint private randomCallCount = 0;
 
-    constructor(address _manager, address _token, address _pool, address teamAdrs, uint _daoFee) {
+    constructor(address _manager, address _token, address _pool, address daoAdrs, uint _daoFee, uint _claimFee) {
         manager = IManager(_manager);
         token = IERC20(_token);
         pool = IPool(_pool);
-        team = teamAdrs;
+        dao = daoAdrs;
         daoFee = _daoFee;
+        claimFee = _claimFee;
+    }
+
+    function updateDaoAddress(address payable _dao) external onlyOwner {
+        dao = _dao;
+    }
+
+    function updateDaoFee(uint _fee) external onlyOwner {
+        daoFee = _fee;
+    }
+
+    function updateClaimFee(uint _fee) external onlyOwner {
+        claimFee = _fee;
     }
 
     function updatePoolAddress(address _pool) external onlyOwner {
@@ -36,19 +51,11 @@ contract Helper is Ownable {
         pool = IPool(_pool);
     }
 
-    function updateTeamAddress(address payable _team) external onlyOwner {
-        team = _team;
-    }
-
-    function updatedaoFee(uint _fee) external onlyOwner {
-        daoFee = _fee;
-    }
-
     function _transferIt(uint contractTokenBalance) internal {
-        uint teamTokens = (contractTokenBalance * daoFee) / 100;
-        token.transfer(team, teamTokens);
+        uint daoTokens = (contractTokenBalance * daoFee) / 100;
+        token.transfer(dao, daoTokens);
 
-        token.transfer(address(pool), contractTokenBalance - teamTokens);
+        token.transfer(address(pool), contractTokenBalance - daoTokens);
     }
 
     // randomized through block timestamp, it'll be upgraded to chainlink
@@ -101,20 +108,31 @@ contract Helper is Ownable {
         manager.createNode(sender, name, tier, paidAmount);
     }
 
-    function claimAll() public returns (bool) {
+    function payRewardsAndClaimFee(uint rewardAmount, address sender) internal{
+        require(rewardAmount > 0,"HELPER: You don't have enough reward to cash out");
+        uint claimFeeAmount = rewardAmount * claimFee / 100;
+        pool.pay(dao, claimFeeAmount);
+        pool.pay(sender, rewardAmount - claimFeeAmount);
+    }
+
+    function claimAll() public {
         address sender = _msgSender();
         uint rewardAmount = manager.claimAll(sender);
 
-        require(rewardAmount > 0,"HELPER: You don't have enough reward to cash out");
-        return pool.pay(sender, rewardAmount);
+        payRewardsAndClaimFee(rewardAmount, sender);
+
+        // require(rewardAmount > 0,"HELPER: You don't have enough reward to cash out");
+        // return pool.pay(sender, rewardAmount);
     }
 
-    function claim(uint _node) public returns (bool) {
+    function claim(uint _node) public {
         address sender = _msgSender();
         uint rewardAmount = manager.claim(sender, _node);
 
-        require(rewardAmount > 0,"HELPER: You don't have enough reward to cash out");
-        return pool.pay(sender, rewardAmount);
+        payRewardsAndClaimFee(rewardAmount, sender);
+
+        // require(rewardAmount > 0,"HELPER: You don't have enough reward to cash out");
+        // return pool.pay(sender, rewardAmount);
     }
 
     function claimAndCompoundAll() public {

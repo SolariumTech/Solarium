@@ -134,6 +134,13 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
         node.compoundedQuantity = node.compoundedQuantity + rewardNode;
     }
 
+    function stake(address account, uint id, uint amountToStake) external onlyIfExists(id) onlyHelper override {
+        require(ownerOf(id) == account, "MANAGER: account not the owner");
+        claimAndCompoundInternal(id);
+        Solar storage node = _nodes[id];
+        node.compoundedQuantity = node.compoundedQuantity + amountToStake;
+    }
+
     function claimAll(address account) external onlyHelper override returns (uint) {
         uint rewards = 0;
         for (uint i = 0; i < _bags[account].length; i++) {
@@ -208,7 +215,7 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
     }
 
     function tokenURI(uint tokenId) external override view returns (string memory) {
-        return string(abi.encodePacked(defaultUri, uint2str(tokenId)));
+        return string(abi.encodePacked(defaultUri, uint2str(_nodes[tokenId].tier)));
     }
     // -------------- VIEWS -----------------/>
 

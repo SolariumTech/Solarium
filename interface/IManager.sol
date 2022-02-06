@@ -10,4 +10,5 @@ interface IManager is IERC721 {
     function claimAndCompound(address account, uint _id) external;
     function claimAll(address account) external returns (uint);
     function claimAndCompoundAll(address account) external;
+    function stake(address account, uint id, uint amountToStake) external;
 }
