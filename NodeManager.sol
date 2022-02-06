@@ -44,7 +44,6 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
     mapping(uint => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-    // to prevent people from spaming node creation 
     uint public minimumNodePrice;
 
     uint64 public claimTimelapse = 86400;
@@ -54,7 +53,6 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
 
     constructor (uint _minimumNodePrice, string memory _defaultUri, uint64[] memory baseRewardPercentByTier,
     uint64[] memory bonusRewardPercentPerTimelapseByTier, uint64[] memory maxBonusRewardPercentPerTimelapseByTier){
-        // price = _price;
         minimumNodePrice = _minimumNodePrice;
         defaultUri = _defaultUri;
         
@@ -136,13 +134,6 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
         node.compoundedQuantity = node.compoundedQuantity + rewardNode;
     }
 
-    function stake(address account, uint id, uint amountToStake) external onlyIfExists(id) onlyHelper override {
-        require(ownerOf(id) == account, "MANAGER: account not the owner");
-        claimAndCompoundInternal(id);
-        Solar storage node = _nodes[id];
-        node.compoundedQuantity = node.compoundedQuantity + amountToStake;
-    }
-
     function claimAll(address account) external onlyHelper override returns (uint) {
         uint rewards = 0;
         for (uint i = 0; i < _bags[account].length; i++) {
@@ -184,8 +175,8 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
 
     // <------------ VIEWS ------------
 
-    function totalNodesCreated() view external returns (uint) {
-        return nodeCounter - 1;
+    function totalSupply() view external returns (uint) {
+        return nodeCounter;
     }
 
     function getNodesByAccount(address account) public view returns (Solar [] memory){

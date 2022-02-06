@@ -19,16 +19,16 @@ contract Helper is Ownable {
 
     IPool public pool;
     
-    uint public teamFee;
+    uint public daoFee;
 
     uint private randomCallCount = 0;
 
-    constructor(address _manager, address _token, address _pool, address teamAdrs, uint _teamFee) {
+    constructor(address _manager, address _token, address _pool, address teamAdrs, uint _daoFee) {
         manager = IManager(_manager);
         token = IERC20(_token);
         pool = IPool(_pool);
         team = teamAdrs;
-        teamFee = _teamFee;
+        daoFee = _daoFee;
     }
 
     function updatePoolAddress(address _pool) external onlyOwner {
@@ -40,12 +40,12 @@ contract Helper is Ownable {
         team = _team;
     }
 
-    function updateTeamFee(uint _fee) external onlyOwner {
-        teamFee = _fee;
+    function updatedaoFee(uint _fee) external onlyOwner {
+        daoFee = _fee;
     }
 
     function _transferIt(uint contractTokenBalance) internal {
-        uint teamTokens = (contractTokenBalance * teamFee) / 100;
+        uint teamTokens = (contractTokenBalance * daoFee) / 100;
         token.transfer(team, teamTokens);
 
         token.transfer(address(pool), contractTokenBalance - teamTokens);
@@ -66,24 +66,24 @@ contract Helper is Ownable {
     }
     function drawTier() internal returns(uint8){
         uint tierIndex = random() % 100;
-        // tier 1 3%
-        if(isInRange(tierIndex, 0, 2)){
+        // tier 1 6%
+        if(isInRange(tierIndex, 0, 5)){
             return 1;
         }
-        // tier 2 7%
-        if(isInRange(tierIndex, 3, 9)){
+        // tier 2 14%
+        if(isInRange(tierIndex, 6, 19)){
             return 2;
         }
-        // tier 3 15%
-        if(isInRange(tierIndex, 10, 24)){
+        // tier 3 21%
+        if(isInRange(tierIndex, 20, 40)){
             return 3;
         }
-        // tier 4 25%
-        if(isInRange(tierIndex, 25, 49)){
+        // tier 4 26%
+        if(isInRange(tierIndex, 41, 66)){
             return 4;
         }
-        // tier 5 50%
-        if(isInRange(tierIndex, 50, 99)){
+        // tier 5 33%
+        if(isInRange(tierIndex, 67, 99)){
             return 5;
         }
         return 0;
@@ -123,14 +123,5 @@ contract Helper is Ownable {
 
     function claimAndCompound(uint _node) public {
         manager.claimAndCompound(_msgSender(), _node);
-    }
-
-    function stake(uint _node, uint amountToStake) public {
-        address sender = _msgSender();
-        require(token.balanceOf(sender) >= amountToStake, "HELPER: Balance too low for staking.");
-        token.transferFrom(_msgSender(), address(this), amountToStake);
-        uint contractTokenBalance = token.balanceOf(address(this));
-        _transferIt(contractTokenBalance);
-        manager.stake(sender, _node, amountToStake);
     }
 }
