@@ -48,13 +48,15 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
 
     uint64 public claimTimelapse = 86400;
     string public defaultUri;
+    string public defaultUriExt;
 
     uint private nodeCounter = 1;
 
-    constructor (uint _minimumNodePrice, string memory _defaultUri, uint64[] memory baseRewardPercentByTier,
+    constructor (uint _minimumNodePrice, string memory _defaultUri, string memory _defaultUriExt, uint64[] memory baseRewardPercentByTier,
     uint64[] memory bonusRewardPercentPerTimelapseByTier, uint64[] memory maxBonusRewardPercentPerTimelapseByTier){
         minimumNodePrice = _minimumNodePrice;
         defaultUri = _defaultUri;
+        defaultUriExt = _defaultUriExt;
         
         for (uint8 i = 0; i < baseRewardPercentByTier.length; i++){
             _baseRewardPercentByTier[i + 1] = baseRewardPercentByTier[i];
@@ -174,6 +176,12 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
         }
     }
 
+    function adminCreateNode(address account, string memory nodeName, uint8 tier, uint paidAmount) onlyOwner external {
+        uint nodeId = nodeCounter;
+        nodeCounter += 1;
+        _createNode(nodeId, nodeName, uint64(block.timestamp), uint64(block.timestamp), tier, paidAmount, 0, account);
+    }
+
     function transferHelperOwnership(address newOwner) public onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
         emit HelperOwnershipTransferred(_helperContract, newOwner);
@@ -215,7 +223,7 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
     }
 
     function tokenURI(uint tokenId) external override view returns (string memory) {
-        return string(abi.encodePacked(defaultUri, uint2str(_nodes[tokenId].tier)));
+        return string(abi.encodePacked(defaultUri, uint2str(_nodes[tokenId].tier), defaultUriExt));
     }
     // -------------- VIEWS -----------------/>
 
@@ -225,6 +233,9 @@ contract Manager is Ownable, HelperOwnable, IERC721, IERC721Metadata, IManager {
 
     function setDefaultTokenUri(string memory uri) onlyOwner external {
         defaultUri = uri;
+    }
+    function setDefaultTokenUriExt(string memory uri) onlyOwner external {
+        defaultUriExt = uri;
     }
 
     function _deleteNode(uint _id) onlyOwner external {
